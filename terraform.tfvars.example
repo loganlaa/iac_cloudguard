@@ -1,0 +1,48 @@
+# ==============================================================================
+# Exemplo de configuração - Check Point CloudGuard Specialist (CCCS R81.20) Lab
+# Copie para terraform.tfvars se quiser customizar: cp terraform.tfvars.example terraform.tfvars
+# ==============================================================================
+
+aws_region     = "us-east-1" # Regiões recomendadas no curso: us-east-1, us-east-2, us-west-2
+project_prefix = "CCCS-Lab"
+
+# Escolha quais laboratórios deseja provisionar:
+deploy_management             = true  # Lab 3B: Security Management Server (CPMGMT) + IAM Role CME
+deploy_spokes                 = true  # Lab 4B (Tasks 1-2): Spoke1/Spoke2 VPCs + Web Servers
+deploy_autoscale              = true  # Lab 4B (Tasks 3-7): ASG VPC + CloudGuard ASG + ALB/NLB + VPC Peering
+deploy_cluster                = true  # Lab 5B (Task 1): South Hub Cluster VPC + CloudGuard HA Cluster
+deploy_vpn                    = true  # Lab 5B (Tasks 3 & 9): VGW + CGW + Site-to-Site VPN + Spoke1 Route
+auto_configure_cme_and_policy = true  # Automatiza Tasks 3B-4 e 3B-5 (autoprov_cfg + AWS-Scale-Policy) via bootstrap
+auto_configure_cluster_vti    = false # Se true, já cria a interface vpnt1 e rota estática nos membros do Cluster (Tasks 5B-4 & 5B-5)
+
+# SSH Key Pair (Task 3B-1)
+create_key_pair = true
+key_name        = "AWS-Lab-Key"
+
+# Credenciais e Versão Check Point
+# IMPORTANTE: Copie este arquivo para terraform.tfvars (que é ignorado pelo Git)
+# e defina suas próprias senhas/chaves antes do deploy.
+chkp_version        = "R81.20-BYOL"
+admin_shell         = "/bin/bash"
+admin_password_hash = "<GERE_COM_OPENSSL_PASSWD_1_OU_USE_O_HASH_DO_LAB>" # Ex. lab ('Checkpoint123'): $1$e1ea8700$LlfzK3ZxnGYdSAvgECsPy0
+sic_key             = "<SUA_SIC_KEY_MIN_8_CHARS>"                        # Ex. lab: Checkpoint123
+admin_cidr          = "0.0.0.0/0"                                        # Recomendado restringir para seu IP: "SEU_IP/32"
+
+# Lab 3B - Management & CME
+management_name            = "CPMGMT"
+management_instance_type   = "m5.xlarge"
+cme_configuration_template = "AWS-Scale-Lab-Template"
+cme_controller_name        = "AWS-Scale-Lab-Controller"
+cme_policy_name            = "AWS-Scale-Policy"
+
+# Lab 4B - Auto Scale & Spokes
+webserver_instance_type   = "t3.micro"
+asg_gateway_instance_type = "c5.large"
+asg_min_size              = 2
+asg_max_size              = 4
+
+# Lab 5B - Cluster & VPN
+cluster_name            = "AWS-Cluster"
+cluster_instance_type   = "c5.large"
+vpn_tunnel1_inside_cidr = "169.254.191.236/30"
+vpn_tunnel1_psk         = "<SUA_PSK_VPN_MIN_8_CHARS>" # Ex: CheckpointVPN123
