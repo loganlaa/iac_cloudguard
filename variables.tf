@@ -37,13 +37,13 @@ variable "deploy_autoscale" {
 variable "deploy_cluster" {
   description = "Lab 5B (Task 5B-1): Implantar a VPC do Cluster e o CloudGuard High Availability Cluster (Single-AZ)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "deploy_vpn" {
   description = "Lab 5B (Tasks 5B-3 & 5B-9): Implantar VGW, Customer Gateway, Site-to-Site VPN e rota default no Spoke1"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "auto_configure_cme_and_policy" {
@@ -62,15 +62,15 @@ variable "auto_configure_cluster_vti" {
 # SSH Key Pair Settings (Task 3B-1)
 # ==============================================================================
 variable "create_key_pair" {
-  description = "Criar automaticamente um par de chaves SSH na AWS e salvar o arquivo .pem localmente"
+  description = "Criar automaticamente um par de chaves SSH na AWS e salvar o arquivo .pem localmente (false para usar um key pair existente)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "key_name" {
-  description = "Nome do Key Pair na AWS (no material: AWS-Lab-Key)"
+  description = "Nome do Key Pair na AWS"
   type        = string
-  default     = "AWS-Lab-Key"
+  default     = "key-logan-us-east-1"
 }
 
 # ==============================================================================
@@ -128,9 +128,9 @@ variable "management_name" {
 }
 
 variable "management_instance_type" {
-  description = "Instance type do Security Management Server (padrão do lab: m5.xlarge)"
+  description = "Instance type do Security Management Server (Free Tier elegível: m7i-flex.large ou c7i-flex.large)"
   type        = string
-  default     = "m5.xlarge"
+  default     = "m7i-flex.large"
 }
 
 variable "cme_configuration_template" {
@@ -194,9 +194,9 @@ variable "asg_private_subnet_cidrs" {
 }
 
 variable "asg_gateway_instance_type" {
-  description = "Instance type dos Gateways do Auto Scaling Group (Task 4B-4: c5.large)"
+  description = "Instance type dos Gateways do Auto Scaling Group (Free Tier elegível: c7i-flex.large)"
   type        = string
-  default     = "c5.large"
+  default     = "c7i-flex.large"
 }
 
 variable "asg_min_size" {
@@ -239,9 +239,9 @@ variable "cluster_name" {
 }
 
 variable "cluster_instance_type" {
-  description = "Instance type dos membros do Cluster (Task 5B-1: c5.large)"
+  description = "Instance type dos membros do Cluster (Free Tier elegível: c7i-flex.large)"
   type        = string
-  default     = "c5.large"
+  default     = "c7i-flex.large"
 }
 
 variable "vpn_tunnel1_inside_cidr" {
@@ -251,7 +251,8 @@ variable "vpn_tunnel1_inside_cidr" {
 }
 
 variable "vpn_tunnel1_psk" {
-  description = "Pre-Shared Key (PSK) do Túnel 1 da VPN Site-to-Site (mínimo 8 caracteres)"
+  description = "Pre-Shared Key (PSK) do Túnel 1 da VPN Site-to-Site (mínimo 8 caracteres, usado apenas quando deploy_vpn = true)"
   type        = string
+  default     = ""
   sensitive   = true
 }
