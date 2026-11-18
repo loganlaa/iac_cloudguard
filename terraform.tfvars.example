@@ -30,6 +30,7 @@ admin_cidr          = "0.0.0.0/0"                                        # Recom
 
 # Lab 3B - Management & CME (Free Tier eligible: m7i-flex.large / c7i-flex.large)
 management_name            = "CPMGMT"
+management_hostname        = "SMS"
 management_instance_type   = "m7i-flex.large"
 cme_configuration_template = "AWS-Scale-Lab-Template"
 cme_controller_name        = "AWS-Scale-Lab-Controller"
@@ -37,6 +38,7 @@ cme_policy_name            = "AWS-Scale-Policy"
 
 # Lab 4B - Auto Scale & Spokes (Free Tier eligible: t3.micro & c7i-flex.large)
 webserver_instance_type   = "t3.micro"
+asg_gateway_hostname      = "FW"
 asg_gateway_instance_type = "c7i-flex.large"
 asg_min_size              = 2
 asg_max_size              = 4

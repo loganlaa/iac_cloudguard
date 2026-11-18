@@ -77,19 +77,19 @@ variable "key_name" {
 # Check Point Common Credentials & Version Settings
 # ==============================================================================
 variable "chkp_version" {
-  description = "Versão e licença do Check Point CloudGuard (ex: R81.20-BYOL ou R81.20-PAYG)"
+  description = "Versão e licença do Check Point CloudGuard (ex: R81.20-BYOL)"
   type        = string
   default     = "R81.20-BYOL"
 }
 
 variable "admin_shell" {
-  description = "Shell padrão do usuário admin (/bin/bash conforme os laboratórios)"
+  description = "Shell padrão do usuário admin"
   type        = string
   default     = "/bin/bash"
 }
 
 variable "admin_password_hash" {
-  description = "Hash MD5/SHA512 da senha admin e maintenance mode (gere com: openssl passwd -1 'SuaSenha'). Ex. do lab para 'Checkpoint123': $1$e1ea8700$LlfzK3ZxnGYdSAvgECsPy0"
+  description = "Hash MD5/SHA512 da senha admin e maintenance mode (gere com: openssl passwd -6 'SuaSenha'). Ex. do lab para 'Checkpoint123': $1$e1ea8700$LlfzK3ZxnGYdSAvgECsPy0"
   type        = string
   sensitive   = true
 }
@@ -125,6 +125,12 @@ variable "management_name" {
   description = "Nome do Security Management Server (usado na tag x-chkp-management e CME -mn)"
   type        = string
   default     = "CPMGMT"
+}
+
+variable "management_hostname" {
+  description = "Hostname do sistema operacional Gaia no Security Management Server"
+  type        = string
+  default     = "SMS"
 }
 
 variable "management_instance_type" {
@@ -191,6 +197,12 @@ variable "asg_private_subnet_cidrs" {
   description = "CIDRs das 2 subnets privadas da VPC de Auto Scaling"
   type        = list(string)
   default     = ["10.100.2.0/24", "10.100.3.0/24"]
+}
+
+variable "asg_gateway_hostname" {
+  description = "Hostname do sistema operacional Gaia nos Gateways do Auto Scaling Group"
+  type        = string
+  default     = "FW"
 }
 
 variable "asg_gateway_instance_type" {

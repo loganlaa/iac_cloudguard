@@ -83,6 +83,7 @@ module "cpmgmt" {
   vpc_id                                    = aws_vpc.cpmgmt[0].id
   subnet_id                                 = aws_subnet.cpmgmt_public[0].id
   management_name                           = var.management_name
+  management_hostname                       = var.management_hostname
   management_instance_type                  = var.management_instance_type
   key_name                                  = local.effective_key_name
   allocate_and_associate_eip                = true
@@ -91,7 +92,7 @@ module "cpmgmt" {
   management_version                        = var.chkp_version
   admin_shell                               = var.admin_shell
   management_password_hash                  = var.admin_password_hash
-  management_maintenance_mode_password_hash = var.admin_password_hash
+  management_maintenance_mode_password_hash = ""
   admin_cidr                                = var.admin_cidr
   gateway_management                        = "Over the internet"
   gateway_addresses                         = "0.0.0.0/0"

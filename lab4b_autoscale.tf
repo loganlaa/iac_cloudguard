@@ -322,11 +322,12 @@ module "autoscale" {
   gateway_version                        = var.chkp_version
   admin_shell                            = var.admin_shell
   gateway_password_hash                  = var.admin_password_hash
-  gateway_maintenance_mode_password_hash = var.admin_password_hash
+  gateway_maintenance_mode_password_hash = ""
   gateway_SICKey                         = var.sic_key
   gateways_provision_address_type        = "public"
   management_server                      = var.management_name
   configuration_template                 = var.cme_configuration_template
+  gateway_bootstrap_script               = "clish -c 'set hostname ${var.asg_gateway_hostname}' -s"
 }
 
 # ------------------------------------------------------------------------------

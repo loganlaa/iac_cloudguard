@@ -119,7 +119,7 @@ module "cluster" {
   admin_shell                            = var.admin_shell
   gateway_SICKey                         = var.sic_key
   gateway_password_hash                  = var.admin_password_hash
-  gateway_maintenance_mode_password_hash = var.admin_password_hash
+  gateway_maintenance_mode_password_hash = ""
   memberAToken                           = ""
   memberBToken                           = ""
   gateway_bootstrap_script               = local.cluster_vti_bootstrap_script
