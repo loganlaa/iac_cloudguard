@@ -70,7 +70,7 @@ variable "create_key_pair" {
 variable "key_name" {
   description = "Nome do Key Pair na AWS"
   type        = string
-  default     = "key-logan-us-east-1"
+  default     = "AWS-Lab-Key"
 }
 
 # ==============================================================================
