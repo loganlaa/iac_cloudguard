@@ -110,6 +110,9 @@ locals {
     # Create 'bitnami' alias user with ec2-user SSH authorized_keys for Task 5B-9 compatibility
     useradd -m -s /bin/bash bitnami || true
     echo "bitnami ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/bitnami
+    echo "bitnami:Checkpoint123" | chpasswd
+    echo "ec2-user:Checkpoint123" | chpasswd
+    echo "root:Checkpoint123" | chpasswd
     mkdir -p /home/bitnami/.ssh
     cp /home/ec2-user/.ssh/authorized_keys /home/bitnami/.ssh/authorized_keys || true
     chown -R bitnami:bitnami /home/bitnami/.ssh
