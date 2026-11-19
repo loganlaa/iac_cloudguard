@@ -92,33 +92,62 @@ data "aws_ssm_parameter" "al2023_ami" {
 }
 
 locals {
-  webserver_userdata = <<-EOF
+  webserver_userdata = replace(<<-EOF
     #!/bin/bash
-    dnf install -y httpd
-    cat << 'HTML' > /var/www/html/index.html
-    <!DOCTYPE html>
-    <html>
-    <head><title>CCCS CloudGuard Lab Web Server</title></head>
-    <body style="font-family: Arial, sans-serif; margin: 40px;">
-      <h1>Congratulations!</h1>
-      <p>You are now running the CCCS Lab Web Server (LAMP simulation) on <b>$(hostname -f)</b>.</p>
-      <p>Private IP: <b>$(hostname -I)</b></p>
-    </body>
-    </html>
-    HTML
-    systemctl enable --now httpd
-    # Create 'bitnami' alias user with ec2-user SSH authorized_keys for Task 5B-9 compatibility
+    # Habilitar autenticacao por senha no SSH
+    echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/50-password-auth.conf
+    sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config || true
+    systemctl restart sshd
+
+    # Criar usuario 'bitnami' e definir senhas para os usuarios
     useradd -m -s /bin/bash bitnami || true
     echo "bitnami ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/bitnami
     echo "bitnami:Checkpoint123" | chpasswd
     echo "ec2-user:Checkpoint123" | chpasswd
     echo "root:Checkpoint123" | chpasswd
+
+    # Copiar chave publica SSH existente
     mkdir -p /home/bitnami/.ssh
     cp /home/ec2-user/.ssh/authorized_keys /home/bitnami/.ssh/authorized_keys || true
     chown -R bitnami:bitnami /home/bitnami/.ssh
     chmod 700 /home/bitnami/.ssh
     chmod 600 /home/bitnami/.ssh/authorized_keys || true
+
+    # Criar pagina HTML e subir servidor Web HTTP na porta 80 (100% offline via Python3 + systemd)
+    mkdir -p /var/www/html
+    HOST_FQDN=$(hostname -f)
+    HOST_IP=$(hostname -I | awk '{print $1}')
+    cat << HTML > /var/www/html/index.html
+    <!DOCTYPE html>
+    <html>
+    <head><title>CCCS CloudGuard Lab Web Server</title></head>
+    <body style="font-family: Arial, sans-serif; margin: 40px;">
+      <h1>Congratulations!</h1>
+      <p>You are now running the CCCS Lab Web Server (LAMP simulation) on <b>$HOST_FQDN</b>.</p>
+      <p>Private IP: <b>$HOST_IP</b></p>
+    </body>
+    </html>
+    HTML
+
+    cat << 'SERVICE' > /etc/systemd/system/lab-webserver.service
+    [Unit]
+    Description=CCCS Lab Offline Web Server (Port 80)
+    After=network.target
+
+    [Service]
+    Type=simple
+    ExecStart=/usr/bin/python3 -m http.server 80 --directory /var/www/html
+    Restart=always
+    RestartSec=2
+
+    [Install]
+    WantedBy=multi-user.target
+    SERVICE
+
+    systemctl daemon-reload
+    systemctl enable --now lab-webserver.service
   EOF
+  , "\r\n", "\n")
 }
 
 # Security Group "Open" in Spoke1 (Task 4B-5 steps 4B-5.40 to 4B-5.44)
@@ -181,6 +210,7 @@ resource "aws_instance" "spoke1_web" {
   key_name                    = local.effective_key_name
   associate_public_ip_address = false
   user_data                   = local.webserver_userdata
+  user_data_replace_on_change = true
 
   tags = {
     Name = "Spoke1-Web-Server"
@@ -196,6 +226,7 @@ resource "aws_instance" "spoke2_web" {
   key_name                    = local.effective_key_name
   associate_public_ip_address = false
   user_data                   = local.webserver_userdata
+  user_data_replace_on_change = true
 
   tags = {
     Name = "Spoke2-Web-Server"
@@ -322,7 +353,7 @@ module "autoscale" {
   minimum_group_size                     = var.asg_min_size
   maximum_group_size                     = var.asg_max_size
   target_groups                          = [aws_lb_target_group.external[0].arn]
-  gateway_version                        = var.chkp_version
+  gateway_version                        = local.effective_gateway_version
   admin_shell                            = var.admin_shell
   gateway_password_hash                  = var.admin_password_hash
   gateway_maintenance_mode_password_hash = ""
@@ -402,6 +433,7 @@ resource "aws_lb" "internal" {
     Name              = "Internal-Load-Balancer"
     x-chkp-management = var.management_name
     x-chkp-template   = var.cme_configuration_template
+    x-chkp-forwarding = "HTTP-9080-80"
   }
 }
 

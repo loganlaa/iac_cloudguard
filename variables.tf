@@ -77,9 +77,21 @@ variable "key_name" {
 # Check Point Common Credentials & Version Settings
 # ==============================================================================
 variable "chkp_version" {
-  description = "Versão e licença do Check Point CloudGuard (ex: R81.20-BYOL)"
+  description = "Versão e licença padrão do Check Point CloudGuard (fallback caso management_version ou gateway_version não sejam definidos)"
   type        = string
   default     = "R81.20-BYOL"
+}
+
+variable "management_version" {
+  description = "Versão e licença do Security Management Server (ex: R82.20-BYOL). Deve ser >= gateway_version."
+  type        = string
+  default     = null
+}
+
+variable "gateway_version" {
+  description = "Versão e licença dos Security Gateways ASG/Cluster (ex: R81.20-BYOL, R82.20-BYOL)."
+  type        = string
+  default     = null
 }
 
 variable "admin_shell" {
@@ -128,9 +140,9 @@ variable "management_name" {
 }
 
 variable "management_hostname" {
-  description = "Hostname do sistema operacional Gaia no Security Management Server"
+  description = "Hostname do sistema operacional Gaia e objeto no SmartConsole (deve coincidir com management_name para o CME)"
   type        = string
-  default     = "SMS"
+  default     = "CPMGMT"
 }
 
 variable "management_instance_type" {

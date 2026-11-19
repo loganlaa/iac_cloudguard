@@ -115,7 +115,7 @@ module "cluster" {
   key_name                               = local.effective_key_name
   allocate_and_associate_eip             = true
   enable_instance_connect                = true
-  gateway_version                        = var.chkp_version
+  gateway_version                        = local.effective_gateway_version
   admin_shell                            = var.admin_shell
   gateway_SICKey                         = var.sic_key
   gateway_password_hash                  = var.admin_password_hash
