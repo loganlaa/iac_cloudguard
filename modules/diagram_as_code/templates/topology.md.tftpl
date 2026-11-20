@@ -1,0 +1,28 @@
+# Topologia AWS em IaC — ${project_prefix} (`${aws_region}`)
+
+> Arquivo gerado automaticamente pelo módulo Terraform `modules/diagram_as_code` a partir das variáveis e flags do código IaC.
+
+## Diagrama de Topologia (Mermaid)
+
+```mermaid
+${mermaid_content}
+```
+
+## Resumo da Configuração Ativa
+
+| Componente / Lab | Status | Detalhes Principais |
+| :--- | :--- | :--- |
+| **Lab 3B — Management (`CPMGMT`)** | `${deploy_management ? "Ativo" : "Desabilitado"}` | VPC `${mgmt_vpc_cidr}` \| Subnet `${mgmt_subnet_cidr}` \| `${management_name}` (`${management_instance_type}`) |
+| **Lab 4B — Spoke VPCs & Web Servers** | `${deploy_spokes ? "Ativo" : "Desabilitado"}` | Spoke1 `${spoke1_vpc_cidr}` \| Spoke2 `${spoke2_vpc_cidr}` \| Web `${webserver_instance_type}` |
+| **Lab 4B — Auto Scale & Load Balancers** | `${deploy_autoscale ? "Ativo" : "Desabilitado"}` | VPC `${asg_vpc_cidr}` \| ASG `${asg_gateway_instance_type}` (${asg_min_size}–${asg_max_size}) \| ALB Externo + NLB Interno + Peering |
+| **Lab 5B — CloudGuard HA Cluster** | `${deploy_cluster ? "Ativo" : "Desabilitado"}` | VPC `${cluster_vpc_cidr}` \| Frontend `${cluster_public_subnet_cidr}` \| Backend `${cluster_private_subnet_cidr}` \| `${cluster_name}` (`${cluster_instance_type}`) |
+| **Lab 5B — Site-to-Site VPN** | `${deploy_vpn ? "Ativo" : "Desabilitado"}` | VGW (`Spoke1-VPN`) ↔ CGW (`${cluster_name}` VIP) \| Tunnel CIDR `${vpn_tunnel1_inside_cidr}` |
+
+## Como Visualizar
+
+- **VS Code / GitHub / GitLab**: Este arquivo Markdown renderiza o diagrama Mermaid nativamente (no VS Code use `Cmd+Shift+V` / *Markdown Preview* com extensão Mermaid).
+- **Diagrama PNG com ícones oficiais AWS (opcional)**:
+  Caso possua Python + `diagrams` + Graphviz instalados, execute:
+  ```bash
+  python3 ${output_dir}/topology_aws_icons.py
+  ```

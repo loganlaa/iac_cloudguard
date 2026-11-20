@@ -1,0 +1,104 @@
+flowchart TB
+    Internet(["🌐 Internet / Admin & Users"])
+
+    subgraph AWS["☁️ AWS Region: ${aws_region} (${project_prefix})"]
+        direction TB
+%{ if deploy_management ~}
+
+        subgraph VPC_MGMT["VPC: ${management_name}-vpc (${mgmt_vpc_cidr}) — Lab 3B"]
+            direction TB
+            IGW_MGMT["Internet Gateway"]
+            subgraph SUB_MGMT["Public Subnet (${mgmt_subnet_cidr})"]
+                CPMGMT["🛡️ ${management_name} (${management_hostname})<br/>EC2: ${management_instance_type}<br/>EIP + IAM Role CME%{ if auto_configure_cme_and_policy }<br/>CME: ${cme_controller_name}<br/>Policy: ${cme_policy_name}%{ endif }"]
+            end
+            IGW_MGMT --- CPMGMT
+        end
+%{ endif ~}
+%{ if deploy_autoscale ~}
+
+        subgraph VPC_ASG["VPC: AWS-AS-VPC (${asg_vpc_cidr}) — Lab 4B"]
+            direction TB
+            IGW_ASG["Internet Gateway"]
+            ALB_EXT["⚖️ ALB Externo: CP-External-1<br/>Listener HTTP :80"]
+            subgraph SUB_ASG_PUB["Public Subnets (${join(", ", asg_public_subnet_cidrs)})"]
+                ASG_GW["🔥 CloudGuard ASG (${asg_gateway_hostname})<br/>EC2: ${asg_gateway_instance_type}<br/>Min: ${asg_min_size} / Max: ${asg_max_size}<br/>Target Port :9080<br/>Template: ${cme_configuration_template}"]
+            end
+            subgraph SUB_ASG_PRIV["Private Subnets (${join(", ", asg_private_subnet_cidrs)})"]
+                ASG_PRIV_NOTE["Private Subnets (2 AZs)"]
+            end
+            IGW_ASG --> ALB_EXT
+            ALB_EXT -->|":9080"| ASG_GW
+            ASG_GW --- ASG_PRIV_NOTE
+        end
+%{ endif ~}
+%{ if deploy_spokes ~}
+
+        subgraph VPC_SPOKE1["VPC: Spoke1 (${spoke1_vpc_cidr}) — Lab 4B"]
+            direction TB
+            subgraph SUB_SPOKE1["Subnet: Spoke1-subnet (${spoke1_vpc_cidr})"]
+%{ if deploy_autoscale ~}
+                NLB_INT["⚖️ NLB Interno: Internal-Load-Balancer<br/>Listener TCP :80"]
+%{ endif ~}
+                WEB1["🖥️ Spoke1-Web-Server<br/>EC2: ${webserver_instance_type} (Apache :80)"]
+%{ if deploy_autoscale ~}
+                NLB_INT -->|":80"| WEB1
+%{ endif ~}
+            end
+%{ if deploy_vpn ~}
+            VGW_SPOKE1["🔌 Virtual Private Gateway<br/>Spoke1-VPN"]
+%{ endif ~}
+        end
+
+        subgraph VPC_SPOKE2["VPC: Spoke2 (${spoke2_vpc_cidr}) — Lab 4B"]
+            direction TB
+            subgraph SUB_SPOKE2["Subnet: Spoke2-subnet (${spoke2_vpc_cidr})"]
+                WEB2["🖥️ Spoke2-Web-Server<br/>EC2: ${webserver_instance_type} (Apache :80)"]
+            end
+        end
+%{ endif ~}
+%{ if deploy_cluster ~}
+
+        subgraph VPC_CLUSTER["VPC: AWS-Cluster-VPC (${cluster_vpc_cidr}) — Lab 5B"]
+            direction TB
+            IGW_CLUSTER["Internet Gateway"]
+            subgraph SUB_CL_PUB["Frontend Public Subnet (${cluster_public_subnet_cidr})"]
+                CLUSTER_VIP["🛡️ ${cluster_name} (Single-AZ HA)<br/>EC2: ${cluster_instance_type} x2 (Member A / B)<br/>3x EIPs (VIP + Members)"]
+            end
+            subgraph SUB_CL_PRIV["Backend Private Subnet (${cluster_private_subnet_cidr})"]
+                CLUSTER_SYNC["eth1 Backend / Sync<br/>Route 0.0.0.0/0 -> Member A ENI"]
+            end
+            IGW_CLUSTER --- CLUSTER_VIP
+            CLUSTER_VIP --- CLUSTER_SYNC
+        end
+%{ endif ~}
+    end
+
+    %% Conectividade Externa
+%{ if deploy_management ~}
+    Internet -->|"SSH / HTTPS / SmartConsole"| IGW_MGMT
+%{ endif ~}
+%{ if deploy_autoscale ~}
+    Internet -->|"HTTP :80"| IGW_ASG
+%{ endif ~}
+%{ if deploy_cluster ~}
+    Internet -->|"Cluster VIP / Members"| IGW_CLUSTER
+%{ endif ~}
+
+    %% Peering & Roteamento Lab 4B
+%{ if deploy_autoscale && deploy_spokes ~}
+    ASG_GW <-->|"VPC Peering: GW-to-Spoke1"| NLB_INT
+%{ endif ~}
+
+    %% Site-to-Site VPN Lab 5B
+%{ if deploy_vpn && deploy_cluster && deploy_spokes ~}
+    CLUSTER_VIP <==>|"Site-to-Site VPN (IKEv1 / ${vpn_tunnel1_inside_cidr})%{ if auto_configure_cluster_vti }<br/>VTI: vpnt1%{ endif }"| VGW_SPOKE1
+    VGW_SPOKE1 --- SUB_SPOKE1
+%{ endif ~}
+
+    %% Control Plane (CME / SIC)
+%{ if deploy_management && deploy_autoscale ~}
+    CPMGMT -.->|"CME / SIC Control Plane"| ASG_GW
+%{ endif ~}
+%{ if deploy_management && deploy_cluster ~}
+    CPMGMT -.->|"SIC / SmartConsole"| CLUSTER_VIP
+%{ endif ~}

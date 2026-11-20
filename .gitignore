@@ -22,3 +22,6 @@ terraform.rc
 # Material proprietário da Check Point (evita subir o PDF de 99MB com copyright)
 *.pdf
 
+# Saída gerada localmente pelo módulo opcional diagram_as_code
+docs/
+

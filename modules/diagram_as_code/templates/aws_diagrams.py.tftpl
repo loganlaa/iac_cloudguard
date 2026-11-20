@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""Diagram as Code (AWS Icons) gerado automaticamente pelo modulo Terraform diagram_as_code.
+
+Requisitos opcionais para renderizar PNG:
+  pip install diagrams
+  brew install graphviz   # (macOS) ou apt-get install graphviz (Linux)
+"""
+
+from diagrams import Cluster, Diagram, Edge
+from diagrams.aws.compute import EC2, AutoScaling
+from diagrams.aws.general import InternetGateway, Users
+from diagrams.aws.network import ALB, NLB, VpnGateway, VPC
+from diagrams.aws.security import IdentityAndAccessManagementIam, Shield
+
+OUTPUT_FILE = "${output_dir}/aws_topology"
+
+with Diagram(
+    "${project_prefix} - AWS CloudGuard Topology (${aws_region})",
+    filename=OUTPUT_FILE,
+    outformat="png",
+    show=False,
+    direction="TB",
+):
+    internet = Users("Internet / Admin")
+    cpmgmt = None
+    asg_gw = None
+    nlb_int = None
+    vgw_spoke1 = None
+    cluster_vip = None
+
+%{ if deploy_management ~}
+    with Cluster("VPC: ${management_name}-vpc (${mgmt_vpc_cidr}) [Lab 3B]"):
+        igw_mgmt = InternetGateway("IGW Management")
+        with Cluster("Public Subnet (${mgmt_subnet_cidr})"):
+            cpmgmt = Shield("${management_name} (${management_hostname})\n${management_instance_type}")
+            cme_iam = IdentityAndAccessManagementIam("IAM Role CME")
+            cpmgmt - Edge(style="dotted") - cme_iam
+        internet >> Edge(label="SSH / SmartConsole") >> igw_mgmt >> cpmgmt
+%{ endif ~}
+
+%{ if deploy_autoscale ~}
+    with Cluster("VPC: AWS-AS-VPC (${asg_vpc_cidr}) [Lab 4B]"):
+        igw_asg = InternetGateway("IGW ASG")
+        alb_ext = ALB("CP-External-1 (HTTP :80)")
+        with Cluster("Public Subnets (${join(", ", asg_public_subnet_cidrs)})"):
+            asg_gw = AutoScaling("CloudGuard ASG (${asg_gateway_hostname})\n${asg_gateway_instance_type} (${asg_min_size}-${asg_max_size})")
+        with Cluster("Private Subnets (${join(", ", asg_private_subnet_cidrs)})"):
+            _priv = VPC("Private Subnets (2 AZs)")
+        internet >> Edge(label="HTTP :80") >> igw_asg >> alb_ext >> Edge(label=":9080") >> asg_gw
+%{ endif ~}
+
+%{ if deploy_spokes ~}
+    with Cluster("VPC: Spoke1 (${spoke1_vpc_cidr}) [Lab 4B]"):
+        web1 = EC2("Spoke1-Web-Server\n${webserver_instance_type} (Apache :80)")
+%{ if deploy_autoscale ~}
+        nlb_int = NLB("Internal-Load-Balancer\nTCP :80")
+        nlb_int >> Edge(label=":80") >> web1
+%{ endif ~}
+%{ if deploy_vpn ~}
+        vgw_spoke1 = VpnGateway("Spoke1-VPN (VGW)")
+%{ endif ~}
+
+    with Cluster("VPC: Spoke2 (${spoke2_vpc_cidr}) [Lab 4B]"):
+        _web2 = EC2("Spoke2-Web-Server\n${webserver_instance_type} (Apache :80)")
+%{ endif ~}
+
+%{ if deploy_cluster ~}
+    with Cluster("VPC: AWS-Cluster-VPC (${cluster_vpc_cidr}) [Lab 5B]"):
+        igw_cl = InternetGateway("IGW Cluster")
+        with Cluster("Frontend (${cluster_public_subnet_cidr})"):
+            cluster_vip = Shield("${cluster_name} HA\n${cluster_instance_type} x2")
+        with Cluster("Backend (${cluster_private_subnet_cidr})"):
+            _cl_priv = VPC("eth1 Sync / Backend")
+        internet >> igw_cl >> cluster_vip
+%{ endif ~}
+
+%{ if deploy_autoscale && deploy_spokes ~}
+    if asg_gw and nlb_int:
+        asg_gw >> Edge(label="VPC Peering: GW-to-Spoke1", color="blue") >> nlb_int
+%{ endif ~}
+
+%{ if deploy_vpn && deploy_cluster && deploy_spokes ~}
+    if cluster_vip and vgw_spoke1:
+        cluster_vip >> Edge(label="Site-to-Site VPN (${vpn_tunnel1_inside_cidr})", color="darkgreen", style="bold") >> vgw_spoke1
+%{ endif ~}
+
+%{ if deploy_management && deploy_autoscale ~}
+    if cpmgmt and asg_gw:
+        cpmgmt >> Edge(label="CME / SIC", style="dashed", color="gray") >> asg_gw
+%{ endif ~}
+
+%{ if deploy_management && deploy_cluster ~}
+    if cpmgmt and cluster_vip:
+        cpmgmt >> Edge(label="SIC / SmartConsole", style="dashed", color="gray") >> cluster_vip
+%{ endif ~}

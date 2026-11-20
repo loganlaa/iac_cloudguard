@@ -100,3 +100,18 @@ Após o `terraform apply`, execute `terraform output` para visualizar todos os I
    ```bash
    terraform destroy
    ```
+
+---
+
+## Diagram as Code (Módulo Opcional)
+
+Para gerar uma visão gráfica da topologia AWS levando em consideração as flags, CIDRs e recursos configurados no seu código (`terraform.tfvars` / `variables.tf`), utilize o módulo opcional `modules/diagram_as_code` (desabilitado por padrão: `enable_diagram = false`).
+
+```bash
+# Gerar apenas a topologia gráfica em docs/ (sem criar recursos na AWS)
+terraform apply -target=module.diagram_as_code -var="enable_diagram=true"
+```
+
+Arquivos gerados em `docs/`:
+- `docs/topology.md` e `docs/topology.mmd`: Diagrama **Mermaid** pronto para visualização nativa no VS Code, GitHub ou GitLab (sem dependências externas).
+- `docs/topology_aws_icons.py`: Script Python (`diagrams`) com ícones oficiais da AWS para geração de PNG (`python3 docs/topology_aws_icons.py` ou `-var="diagram_render_png=true"`).

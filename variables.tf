@@ -280,3 +280,24 @@ variable "vpn_tunnel1_psk" {
   default     = ""
   sensitive   = true
 }
+
+# ==============================================================================
+# Optional Module: Diagram as Code
+# ==============================================================================
+variable "enable_diagram" {
+  description = "Habilitar o módulo opcional de Diagram as Code para gerar a topologia AWS em docs/"
+  type        = bool
+  default     = false
+}
+
+variable "diagram_output_dir" {
+  description = "Diretório de saída dos arquivos gerados pelo módulo diagram_as_code"
+  type        = string
+  default     = "docs"
+}
+
+variable "diagram_render_png" {
+  description = "Renderizar automaticamente o PNG com ícones AWS (requer Python 'diagrams' e Graphviz instalados)"
+  type        = bool
+  default     = false
+}

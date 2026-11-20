@@ -14,6 +14,7 @@ deploy_cluster                = false # Lab 5B (Task 1): South Hub Cluster VPC +
 deploy_vpn                    = false # Lab 5B (Tasks 3 & 9): VGW + CGW + Site-to-Site VPN + Spoke1 Route
 auto_configure_cme_and_policy = true  # Automatiza Tasks 3B-4 e 3B-5 (autoprov_cfg + AWS-Scale-Policy) via bootstrap
 auto_configure_cluster_vti    = false # Se true, já cria a interface vpnt1 e rota estática nos membros do Cluster (Tasks 5B-4 & 5B-5)
+enable_diagram                = false # Módulo opcional de Diagram as Code (gera topologia gráfica em docs/)
 
 # SSH Key Pair (Task 3B-1)
 create_key_pair = false

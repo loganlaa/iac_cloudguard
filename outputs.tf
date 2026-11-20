@@ -79,3 +79,13 @@ output "lab5b_cluster_and_vpn" {
     ] : []
   } : null
 }
+
+output "diagram_files" {
+  description = "Caminhos dos arquivos de Diagram as Code gerados (quando enable_diagram = true)"
+  value = var.enable_diagram ? {
+    markdown_file        = module.diagram_as_code[0].markdown_file
+    mermaid_file         = module.diagram_as_code[0].mermaid_file
+    python_diagrams_file = module.diagram_as_code[0].python_diagrams_file
+    png_file             = module.diagram_as_code[0].png_file
+  } : null
+}
