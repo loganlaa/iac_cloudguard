@@ -24,6 +24,7 @@ key_name        = "AWS-Lab-Key"
 # IMPORTANTE: Copie este arquivo para terraform.tfvars (que é ignorado pelo Git)
 # e defina suas próprias senhas/chaves antes do deploy.
 chkp_version        = "R81.20-BYOL"
+management_version  = "R82.20-BYOL"
 admin_shell         = "/bin/bash"
 admin_password_hash = "<GERE_COM_OPENSSL_PASSWD_1_OU_USE_O_HASH_DO_LAB>" # Ex. lab ('Checkpoint123'): $1$e1ea8700$LlfzK3ZxnGYdSAvgECsPy0
 sic_key             = "<SUA_SIC_KEY_MIN_8_CHARS>"                        # Ex. lab: Checkpoint123

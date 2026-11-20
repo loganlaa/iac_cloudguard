@@ -85,7 +85,7 @@ variable "chkp_version" {
 variable "management_version" {
   description = "Versão e licença do Security Management Server (ex: R82.20-BYOL). Deve ser >= gateway_version."
   type        = string
-  default     = null
+  default     = "R82.20-BYOL"
 }
 
 variable "gateway_version" {
