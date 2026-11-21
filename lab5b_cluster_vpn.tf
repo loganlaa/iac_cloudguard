@@ -106,10 +106,13 @@ module "cluster" {
   source  = "CheckPointSW/cloudguard-network-security/aws//modules/cluster"
   version = "1.2.1"
 
-  vpc_id                                 = aws_vpc.cluster[0].id
-  public_subnet_id                       = aws_subnet.cluster_public[0].id
-  private_subnet_id                      = aws_subnet.cluster_private[0].id
-  private_route_table                    = aws_route_table.cluster_private[0].id
+  vpc_id            = aws_vpc.cluster[0].id
+  public_subnet_id  = aws_subnet.cluster_public[0].id
+  private_subnet_id = aws_subnet.cluster_private[0].id
+  # The upstream module compares this value in a count expression. Passing a
+  # resource ID would keep that count unknown during planning, so the route
+  # table association and default route are managed below in the root module.
+  private_route_table                    = ""
   gateway_name                           = var.cluster_name
   gateway_instance_type                  = var.cluster_instance_type
   key_name                               = local.effective_key_name
@@ -151,6 +154,26 @@ data "aws_network_interface" "cluster_member_a_int" {
     values = [aws_vpc.cluster[0].id]
   }
   depends_on = [module.cluster]
+}
+
+# The CloudGuard cluster module cannot plan its optional private route when the
+# route table ID is created in this configuration. Manage those two resources
+# here with a static count instead.
+resource "aws_route_table_association" "cluster_private" {
+  count          = var.deploy_cluster ? 1 : 0
+  subnet_id      = aws_subnet.cluster_private[0].id
+  route_table_id = aws_route_table.cluster_private[0].id
+}
+
+resource "aws_route" "cluster_private_default" {
+  count                  = var.deploy_cluster ? 1 : 0
+  route_table_id         = aws_route_table.cluster_private[0].id
+  destination_cidr_block = "0.0.0.0/0"
+  network_interface_id   = data.aws_network_interface.cluster_member_a_int[0].id
+
+  lifecycle {
+    ignore_changes = [network_interface_id]
+  }
 }
 
 # ------------------------------------------------------------------------------
