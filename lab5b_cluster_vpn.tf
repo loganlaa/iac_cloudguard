@@ -80,7 +80,7 @@ resource "aws_route_table" "cluster_private" {
 }
 
 # ------------------------------------------------------------------------------
-# Tasks 5B-4 & 5B-5: Optional Bootstrap Script for VTI & Static Route on Cluster
+# Tasks 5B-4 & 5B-5: Bootstrap Script for Hostnames (FW-A / FW-B) & Optional VTI
 # ------------------------------------------------------------------------------
 locals {
   # Inside a /30 tunnel CIDR (e.g. 169.254.191.236/30):
@@ -89,13 +89,29 @@ locals {
   vpn_tunnel1_aws_inside_ip  = cidrhost(var.vpn_tunnel1_inside_cidr, 1)
   vpn_tunnel1_chkp_inside_ip = cidrhost(var.vpn_tunnel1_inside_cidr, 2)
 
-  cluster_vti_bootstrap_script = var.auto_configure_cluster_vti ? join("; ", [
+  # The upstream cluster module applies var.gateway_hostname identically to both
+  # members; if empty, Gaia defaults to the EC2 instance ID. Detect Member A vs B
+  # at boot via IMDS (Member A has the secondary cluster VIP on eth0 -> >1 IPs).
+  cluster_hostname_cmd = join("; ", [
+    "source /etc/profile.d/CP.sh",
+    "TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60')",
+    "MAC=$(curl -s -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/mac)",
+    "IP_COUNT=$(curl -s -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/network/interfaces/macs/$MAC/local-ipv4s | wc -l)",
+    "if [ \"$IP_COUNT\" -gt 1 ]; then clish -c 'set hostname ${var.cluster_member_a_hostname}'; else clish -c 'set hostname ${var.cluster_member_b_hostname}'; fi"
+  ])
+
+  cluster_vti_cmds = var.auto_configure_cluster_vti ? [
     "clish -c 'add vpn tunnel 1 type numbered local ${local.vpn_tunnel1_chkp_inside_ip} remote ${local.vpn_tunnel1_aws_inside_ip} peer AWS_Tunnel1'",
     "clish -c 'set interface vpnt1 state on'",
     "clish -c 'set interface vpnt1 mtu 1399'",
-    "clish -c 'set static-route ${var.spoke1_vpc_cidr} nexthop gateway logical vpnt1 priority 1 on'",
-    "clish -c 'save config'"
-  ]) : ""
+    "clish -c 'set static-route ${var.spoke1_vpc_cidr} nexthop gateway logical vpnt1 priority 1 on'"
+  ] : []
+
+  cluster_vti_bootstrap_script = join("; ", concat(
+    [local.cluster_hostname_cmd],
+    local.cluster_vti_cmds,
+    ["clish -c 'save config'"]
+  ))
 }
 
 # ------------------------------------------------------------------------------
@@ -148,6 +164,32 @@ data "aws_network_interface" "cluster_member_a_int" {
   filter {
     name   = "tag:Name"
     values = ["${var.cluster_name}-Member_A_InternalInterface"]
+  }
+  filter {
+    name   = "vpc-id"
+    values = [aws_vpc.cluster[0].id]
+  }
+  depends_on = [module.cluster]
+}
+
+data "aws_network_interface" "cluster_member_b_ext" {
+  count = var.deploy_cluster ? 1 : 0
+  filter {
+    name   = "tag:Name"
+    values = ["${var.cluster_name}-Member_B_ExternalInterface"]
+  }
+  filter {
+    name   = "vpc-id"
+    values = [aws_vpc.cluster[0].id]
+  }
+  depends_on = [module.cluster]
+}
+
+data "aws_network_interface" "cluster_member_b_int" {
+  count = var.deploy_cluster ? 1 : 0
+  filter {
+    name   = "tag:Name"
+    values = ["${var.cluster_name}-Member_B_InternalInterface"]
   }
   filter {
     name   = "vpc-id"

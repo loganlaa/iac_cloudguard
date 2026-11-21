@@ -262,6 +262,18 @@ variable "cluster_name" {
   default     = "AWS-Cluster"
 }
 
+variable "cluster_member_a_hostname" {
+  description = "Hostname do sistema operacional Gaia para o Member A do Cluster"
+  type        = string
+  default     = "FW-A"
+}
+
+variable "cluster_member_b_hostname" {
+  description = "Hostname do sistema operacional Gaia para o Member B do Cluster"
+  type        = string
+  default     = "FW-B"
+}
+
 variable "cluster_instance_type" {
   description = "Instance type dos membros do Cluster (Free Tier elegível: c7i-flex.large)"
   type        = string
